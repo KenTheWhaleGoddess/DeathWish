@@ -2289,7 +2289,7 @@ pragma solidity ^0.8.6;
 
 contract DeathWish is ReentrancyGuard {
     struct Switch {
-        uint64 unlock;
+        uint40 unlock;
         address user;
         address tokenAddress;
         uint8 tokenType; //1 - ERC20 , 2 - ERC721 - 3 - ERC1155
@@ -2303,7 +2303,7 @@ contract DeathWish is ReentrancyGuard {
     mapping(address => uint256[]) userBenefactor;
     mapping(uint256 => address[]) benefactors;
 
-    uint256 public MAX_TIMESTAMP = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff; //hope this is good enough
+    uint40 public MAX_TIMESTAMP = 2**40 - 1; //hope this is good enough
     
     function getCounter() external view returns (uint256) {
         return counter;
@@ -2312,20 +2312,20 @@ contract DeathWish is ReentrancyGuard {
     function inspectSwitch(uint256 id) external view returns (uint256, address, address, uint256, uint256, uint256) {
         require(id < counter, "Out of range");
         Switch memory _switch = switches[id];
-        return (_switch.unlock, _switch.user, _switch.tokenAddress, _switch.tokenType, _switch.tokenId, _switch.amount);
+        return (switchClaimableByAt(id, msg.sender), _switch.user, _switch.tokenAddress, _switch.tokenType, _switch.tokenId, _switch.amount);
     }
 
     function isSwitchClaimed(uint256 id) external view returns (bool) {
         return switchClaimed[id];
     }
-    function switchClaimableByAt(uint256 id, address _user) internal view returns (uint256) {
+    function switchClaimableByAt(uint256 id, address _user) internal view returns (uint40) {
         if (id >= counter) return MAX_TIMESTAMP;
         if (switchClaimed[id]) return MAX_TIMESTAMP;
         Switch memory _switch = switches[id];
         if (_user == _switch.user) return 0;
         for(uint256 i = 0; i < (benefactors[id].length); i++) {
             if (benefactors[id][i] == _user) {
-                return (_switch.unlock + (i * 30 days));
+                return (_switch.unlock + uint40((i * 60 days)));
             }
         }
         return MAX_TIMESTAMP;
@@ -2347,7 +2347,7 @@ contract DeathWish is ReentrancyGuard {
         return userBenefactor[_user];
     }
 
-    function createNewERC20Switch(uint64 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external returns (uint256) {
+    function createNewERC20Switch(uint40 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external returns (uint256) {
         require(ERC20(tokenAddress).allowance(msg.sender, address(this)) >= amount, "No allowance set");
         switches[counter] = Switch(
             unlockTimestamp,
@@ -2366,7 +2366,7 @@ contract DeathWish is ReentrancyGuard {
         return counter++;
     }
 
-    function createNewERC721Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, address[] memory _benefactors) external returns (uint256) {
+    function createNewERC721Switch(uint40 unlockTimestamp, address tokenAddress, uint256 tokenId, address[] memory _benefactors) external returns (uint256) {
         require(ERC721(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         switches[counter] = Switch(
             unlockTimestamp,
@@ -2385,7 +2385,7 @@ contract DeathWish is ReentrancyGuard {
         return counter++;
     }
 
-    function createNewERC1155Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, uint256 amount, address[] memory _benefactors) external returns (uint256) {
+    function createNewERC1155Switch(uint40 unlockTimestamp, address tokenAddress, uint256 tokenId, uint256 amount, address[] memory _benefactors) external returns (uint256) {
         require(ERC1155(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         switches[counter] = Switch(
             unlockTimestamp,
@@ -2410,7 +2410,7 @@ contract DeathWish is ReentrancyGuard {
     event BenefactorsUpdated(uint256 id);
     
 
-    function updateUnlockTime(uint256 id, uint64 newUnlock) external {
+    function updateUnlockTime(uint256 id, uint40 newUnlock) external {
         require(id < counter, "out of range");
         Switch storage _switch = switches[id];
         require(_switch.user == msg.sender, "You are not the locker");
