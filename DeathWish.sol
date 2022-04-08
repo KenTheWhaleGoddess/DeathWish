@@ -2308,13 +2308,6 @@ contract DeathWish is ReentrancyGuard {
     function getCounter() external view returns (uint256) {
         return counter;
     }
-    function getCounterOwnedBy(address _user) public view returns (uint256) {
-        return userSwitches[_user].length;
-    }
-
-    function getCounterBenefactorOf(address _user) public view returns (uint256) {
-        return userBenefactor[_user].length;
-    }
 
     function inspectSwitch(uint256 id) external view returns (uint256, address, address, uint256, uint256, uint256) {
         require(id < counter, "Out of range");
@@ -2342,45 +2335,52 @@ contract DeathWish is ReentrancyGuard {
         return (block.timestamp > switchClaimableByAt(id, _user));
     }
 
-    function getBenefactorsForSwitch(uint256 id, uint256 offset, uint256 limit) external view returns (address[] memory) {
+    function getBenefactorsForSwitch(uint256 id) external view returns (address[] memory) {
         require(id < counter, "Out of range");
-        address[] memory _benefactors = benefactors[id];
-        address[] memory paginated;
-        for(uint i = 0; i < limit; i++) {
-            paginated[i] = _benefactors[i + offset];
-        }
-        return paginated;
+        return benefactors[id];
     }
+
+    function getPaginatedBenefactorsForSwitch(uint256 id, uint256 offset, uint256 len) external view returns (address[] memory) {
+        require(id < counter, "Out of range");
+        require(offset < benefactors[id].length, "Out of range");
+        uint256 arraylen = min(offset + len, benefactors[id].length) - offset;
+        address[] memory result = new address[](arraylen);
+    
+        for(uint256 i = 0; i < arraylen; i++) {
+            result[i] = benefactors[id][i + offset];
+        }
+        return result;
+    }
+
     function getOwnedSwitches(address _user) external view returns (uint256[] memory) {
-        return getOwnedSwitches(_user, 0, getCounterOwnedBy(_user));
+        return userSwitches[_user];
     }
 
-    function getOwnedSwitches(address _user, uint256 offset, uint256 limit) public view returns (uint256[] memory) {
-        
-        uint256[] memory muhSwitches = userSwitches[_user];
-        uint256[] memory paginated;
-
-        for(uint i = 0; i < limit; i++) {
-            paginated[i] = muhSwitches[i + offset];
+    function getPaginatedOwnedSwitches(address _user, uint256 offset, uint256 len) external view returns (uint256[] memory) {
+        require(offset < userSwitches[_user].length, "Out of range");
+        uint256 arraylen =  min(offset + len, userSwitches[_user].length) - offset;
+        uint256[] memory result = new uint256[](arraylen);
+    
+        for(uint256 i = 0; i < arraylen; i++) {
+            result[i] = userSwitches[_user][i + offset];
         }
-        return paginated;
+        return result;
     }
 
-    function getBenefactorSwitches(address _user) public view returns (uint256[] memory) {
-        return getBenefactorSwitches(_user, 0, getCounterBenefactorOf(_user));
+    function getBenefactorSwitches(address _user) external view returns (uint256[] memory) {
+        return userBenefactor[_user];
     }
 
-    function getBenefactorSwitches(address _user, uint256 offset, uint256 limit) public view returns (uint256[] memory) {
-        
-        uint256[] memory muhSwitches = userBenefactor[_user];
-        uint256[] memory paginated;
-
-        for(uint i = 0; i < limit; i++) {
-            paginated[i] = muhSwitches[i + offset];
+    function getPaginatedBenefactorSwitches(address _user, uint256 offset, uint256 len) external view returns (uint256[] memory) {
+        require(offset < userBenefactor[_user].length, "Out of range");
+        uint256 arraylen = min(offset + len, userBenefactor[_user].length) - offset;
+        uint256[] memory result = new uint256[](arraylen);
+    
+        for(uint256 i = 0; i < arraylen; i++) {
+            result[i] = userBenefactor[_user][i + offset];
         }
-        return paginated;
+        return result;
     }
-
     function createNewERC20Switch(uint40 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external returns (uint256) {
         require(ERC20(tokenAddress).allowance(msg.sender, address(this)) >= amount, "No allowance set");
         switches[counter] = Switch(
@@ -2471,6 +2471,13 @@ contract DeathWish is ReentrancyGuard {
         } else { revert("FUD"); }
         switchClaimed[id] = true;
         emit SwitchClaimed(id, _switch.tokenType);
+    }
+
+    function min(uint256 x, uint256 y) internal pure returns (uint256) {
+        if(x > y) {
+            return y;
+        }
+        return x;
     }
 
 }
