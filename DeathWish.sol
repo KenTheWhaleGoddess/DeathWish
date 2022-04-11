@@ -2340,47 +2340,13 @@ contract DeathWish is ReentrancyGuard {
         return benefactors[id];
     }
 
-    function getPaginatedBenefactorsForSwitch(uint256 id, uint256 offset, uint256 len) external view returns (address[] memory) {
-        require(id < counter, "Out of range");
-        require(offset < benefactors[id].length, "Out of range");
-        uint256 arraylen = min(offset + len, benefactors[id].length) - offset;
-        address[] memory result = new address[](arraylen);
-    
-        for(uint256 i = 0; i < arraylen; i++) {
-            result[i] = benefactors[id][i + offset];
-        }
-        return result;
-    }
-
     function getOwnedSwitches(address _user) external view returns (uint256[] memory) {
         return userSwitches[_user];
     }
-
-    function getPaginatedOwnedSwitches(address _user, uint256 offset, uint256 len) external view returns (uint256[] memory) {
-        require(offset < userSwitches[_user].length, "Out of range");
-        uint256 arraylen =  min(offset + len, userSwitches[_user].length) - offset;
-        uint256[] memory result = new uint256[](arraylen);
-    
-        for(uint256 i = 0; i < arraylen; i++) {
-            result[i] = userSwitches[_user][i + offset];
-        }
-        return result;
-    }
-
     function getBenefactorSwitches(address _user) external view returns (uint256[] memory) {
         return userBenefactor[_user];
     }
 
-    function getPaginatedBenefactorSwitches(address _user, uint256 offset, uint256 len) external view returns (uint256[] memory) {
-        require(offset < userBenefactor[_user].length, "Out of range");
-        uint256 arraylen = min(offset + len, userBenefactor[_user].length) - offset;
-        uint256[] memory result = new uint256[](arraylen);
-    
-        for(uint256 i = 0; i < arraylen; i++) {
-            result[i] = userBenefactor[_user][i + offset];
-        }
-        return result;
-    }
     function createNewERC20Switch(uint40 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external returns (uint256) {
         require(ERC20(tokenAddress).allowance(msg.sender, address(this)) >= amount, "No allowance set");
         switches[counter] = Switch(
@@ -2471,13 +2437,6 @@ contract DeathWish is ReentrancyGuard {
         } else { revert("FUD"); }
         switchClaimed[id] = true;
         emit SwitchClaimed(id, _switch.tokenType);
-    }
-
-    function min(uint256 x, uint256 y) internal pure returns (uint256) {
-        if(x > y) {
-            return y;
-        }
-        return x;
     }
 
 }
