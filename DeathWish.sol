@@ -1,3 +1,4 @@
+//SPDX-License-Identifier: MIT
 // File: @openzeppelin/contracts/security/ReentrancyGuard.sol
 
 
@@ -2289,7 +2290,7 @@ pragma solidity ^0.8.6;
 
 contract DeathWish is ReentrancyGuard {
     struct Switch {
-        uint40 unlock;
+        uint64 unlock;
         address user;
         address tokenAddress;
         uint8 tokenType; //1 - ERC20 , 2 - ERC721 - 3 - ERC1155
@@ -2303,7 +2304,7 @@ contract DeathWish is ReentrancyGuard {
     mapping(address => uint256[]) userBenefactor;
     mapping(uint256 => address[]) benefactors;
 
-    uint40 public MAX_TIMESTAMP = 2**40 - 1; //hope this is good enough
+    uint64 public MAX_TIMESTAMP = 2**64 - 1; //hope this is good enough
     
     function getCounter() external view returns (uint256) {
         return counter;
@@ -2318,14 +2319,14 @@ contract DeathWish is ReentrancyGuard {
     function isSwitchClaimed(uint256 id) external view returns (bool) {
         return switchClaimed[id];
     }
-    function switchClaimableByAt(uint256 id, address _user) internal view returns (uint40) {
+    function switchClaimableByAt(uint256 id, address _user) internal view returns (uint64) {
         if (id >= counter) return MAX_TIMESTAMP;
         if (switchClaimed[id]) return MAX_TIMESTAMP;
         Switch memory _switch = switches[id];
         if (_user == _switch.user) return 0;
         for(uint256 i = 0; i < (benefactors[id].length); i++) {
             if (benefactors[id][i] == _user) {
-                return (_switch.unlock + uint40((i * 60 days)));
+                return (_switch.unlock + uint64((i * 60 days)));
             }
         }
         return MAX_TIMESTAMP;
