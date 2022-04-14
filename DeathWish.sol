@@ -2320,7 +2320,6 @@ contract DeathWish is ReentrancyGuard {
         return switchClaimed[id];
     }
     function switchClaimableByAt(uint256 id, address _user) internal view returns (uint64) {
-        if (id >= counter) return MAX_TIMESTAMP;
         if (switchClaimed[id]) return MAX_TIMESTAMP;
         Switch memory _switch = switches[id];
         if (_user == _switch.user) return 0;
@@ -2348,7 +2347,7 @@ contract DeathWish is ReentrancyGuard {
         return userBenefactor[_user];
     }
 
-    function createNewERC20Switch(uint40 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external returns (uint256) {
+    function createNewERC20Switch(uint64 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external returns (uint256) {
         require(ERC20(tokenAddress).allowance(msg.sender, address(this)) >= amount, "No allowance set");
         switches[counter] = Switch(
             unlockTimestamp,
@@ -2367,7 +2366,7 @@ contract DeathWish is ReentrancyGuard {
         return counter++;
     }
 
-    function createNewERC721Switch(uint40 unlockTimestamp, address tokenAddress, uint256 tokenId, address[] memory _benefactors) external returns (uint256) {
+    function createNewERC721Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, address[] memory _benefactors) external returns (uint256) {
         require(ERC721(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         switches[counter] = Switch(
             unlockTimestamp,
@@ -2386,7 +2385,7 @@ contract DeathWish is ReentrancyGuard {
         return counter++;
     }
 
-    function createNewERC1155Switch(uint40 unlockTimestamp, address tokenAddress, uint256 tokenId, uint256 amount, address[] memory _benefactors) external returns (uint256) {
+    function createNewERC1155Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, uint256 amount, address[] memory _benefactors) external returns (uint256) {
         require(ERC1155(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         switches[counter] = Switch(
             unlockTimestamp,
