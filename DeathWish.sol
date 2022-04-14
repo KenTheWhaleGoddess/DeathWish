@@ -2407,16 +2407,26 @@ contract DeathWish is ReentrancyGuard {
     }
     event SwitchCreated(uint256 id, uint8 switchType);
     event SwitchClaimed(uint256 id, uint8 switchType);
-    event UnlockTimeUpdated(uint256 id, uint256 unlock_time);
+    event UnlockTimeUpdated(uint256 id, uint64 unlock_time);
+    event TokenAmountUpdated(uint256 id, uint256 unlock_time);
     event BenefactorsUpdated(uint256 id);
     
 
-    function updateUnlockTime(uint256 id, uint40 newUnlock) external {
+    function updateUnlockTime(uint256 id, uint64 newUnlock) external {
         require(id < counter, "out of range");
         Switch storage _switch = switches[id];
         require(_switch.user == msg.sender, "You are not the locker");
         _switch.unlock = newUnlock;
         emit UnlockTimeUpdated(id, newUnlock);
+    }
+
+    function updateTokenAmount(uint256 id, uint256 newAmount) external {
+        require(id < counter, "out of range");
+        Switch storage _switch = switches[id];
+        require(_switch.user == msg.sender, "You are not the locker");
+        require(_switch.tokenType != 2, "Not valid for ERC721");
+        _switch.amount = newAmount;
+        emit TokenAmountUpdated(id, newAmount);
     }
     function updateBenefactors(uint256 id, address[] memory _benefactors) external {
         require(id < counter, "out of range");
@@ -2430,14 +2440,26 @@ contract DeathWish is ReentrancyGuard {
         Switch memory _switch = switches[id];
         require(isSwitchClaimableBy(id, msg.sender), "sender is not a benefactor or owner");
         if (_switch.tokenType == 1) {
-            ERC20(_switch.tokenAddress).transferFrom(_switch.user, msg.sender, _switch.amount);
+            ERC20(_switch.tokenAddress).transferFrom(_switch.user, msg.sender, 
+            // use min here in case somoene sold some of their token
+            min(ERC20(_switch.tokenAddress).balanceOf(_switch.user), _switch.amount));
         } else if (_switch.tokenType == 2) {
             ERC721(_switch.tokenAddress).transferFrom(_switch.user, msg.sender, _switch.tokenId);
         } else if (_switch.tokenType == 3) {
-            ERC1155(_switch.tokenAddress).safeTransferFrom(_switch.user, msg.sender, _switch.tokenId, _switch.amount, '');
+            ERC1155(_switch.tokenAddress).safeTransferFrom(_switch.user, msg.sender, _switch.tokenId, 
+            // use min here in case someone sold 1/2 of their 1155
+            min(ERC1155(_switch.tokenAddress).balanceOf(_switch.user, _switch.tokenId), _switch.amount), '');
         } else { revert("FUD"); }
         switchClaimed[id] = true;
         emit SwitchClaimed(id, _switch.tokenType);
+    }
+
+    function min(uint256 x, uint256 y) internal pure returns (uint256) {
+        if (x > y) {
+            return y;
+        }
+
+        return x;
     }
 
 }
