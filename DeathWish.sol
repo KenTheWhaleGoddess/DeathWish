@@ -1,14 +1,13 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-
 contract DeathWish is ReentrancyGuard {
+    
     struct Switch {
         uint64 unlock;
         address user;
@@ -17,6 +16,7 @@ contract DeathWish is ReentrancyGuard {
         uint256 tokenId; //for ERC721/ERC1155
         uint256 amount; //for ERC20/ERC1155
     }
+
     uint256 counter;
     mapping(uint256 => Switch) switches;
     mapping(uint256 => bool) switchClaimed;
@@ -39,6 +39,7 @@ contract DeathWish is ReentrancyGuard {
     function isSwitchClaimed(uint256 id) external view returns (bool) {
         return switchClaimed[id];
     }
+
     function switchClaimableByAt(uint256 id, address _user) internal view returns (uint64) {
         if (switchClaimed[id]) return MAX_TIMESTAMP;
         Switch memory _switch = switches[id];
@@ -63,6 +64,7 @@ contract DeathWish is ReentrancyGuard {
     function getOwnedSwitches(address _user) external view returns (uint256[] memory) {
         return userSwitches[_user];
     }
+
     function getBenefactorSwitches(address _user) external view returns (uint256[] memory) {
         return userBenefactor[_user];
     }
@@ -124,6 +126,7 @@ contract DeathWish is ReentrancyGuard {
         emit SwitchCreated(counter, switches[counter].tokenType);
         return counter++;
     }
+
     event SwitchCreated(uint256 id, uint8 switchType);
     event SwitchClaimed(uint256 id, uint8 switchType);
     event UnlockTimeUpdated(uint256 id, uint64 unlock_time);
@@ -177,8 +180,6 @@ contract DeathWish is ReentrancyGuard {
         if (x > y) {
             return y;
         }
-
         return x;
     }
-
 }
