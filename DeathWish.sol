@@ -9,10 +9,10 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract DeathWish is ReentrancyGuard {
     
     struct Switch {
+        uint8 tokenType; //1 - ERC20 , 2 - ERC721 - 3 - ERC1155
         uint64 unlock;
         address user;
         address tokenAddress;
-        uint8 tokenType; //1 - ERC20 , 2 - ERC721 - 3 - ERC1155
         uint256 tokenId; //for ERC721/ERC1155
         uint256 amount; //for ERC20/ERC1155
     }
@@ -72,10 +72,10 @@ contract DeathWish is ReentrancyGuard {
     function createNewERC20Switch(uint64 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external returns (uint256) {
         require(IERC20(tokenAddress).allowance(msg.sender, address(this)) >= amount, "No allowance set");
         switches[counter] = Switch(
+            1,
             unlockTimestamp,
             msg.sender,
             tokenAddress,
-            1,
             0, //null
             amount
         );
@@ -91,10 +91,10 @@ contract DeathWish is ReentrancyGuard {
     function createNewERC721Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, address[] memory _benefactors) external returns (uint256) {
         require(IERC721(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         switches[counter] = Switch(
+            2,
             unlockTimestamp,
             msg.sender,
             tokenAddress,
-            2,
             tokenId, 
             0 //null
         );
@@ -110,10 +110,10 @@ contract DeathWish is ReentrancyGuard {
     function createNewERC1155Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, uint256 amount, address[] memory _benefactors) external returns (uint256) {
         require(IERC1155(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         switches[counter] = Switch(
+            3,
             unlockTimestamp,
             msg.sender,
             tokenAddress,
-            3,
             tokenId,
             amount
         );
