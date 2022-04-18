@@ -5,7 +5,30 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+/*
+                __                   __   __                                                                             __            __       ____  
+                |  \                 |  \ |  \                                                                           |  \          |  \     /    \ 
+    __   __   __ | $$____    ______  _| $$_| $$ _______        __    __   ______   __    __   ______         __   __   __  \$$  _______ | $$____|  $$$$\
+    |  \ |  \ |  \| $$    \  |      \|   $$ \\$ /       \      |  \  |  \ /      \ |  \  |  \ /      \       |  \ |  \ |  \|  \ /       \| $$    \\$$| $$
+    | $$ | $$ | $$| $$$$$$$\  \$$$$$$\\$$$$$$  |  $$$$$$$      | $$  | $$|  $$$$$$\| $$  | $$|  $$$$$$\      | $$ | $$ | $$| $$|  $$$$$$$| $$$$$$$\ /  $$
+    | $$ | $$ | $$| $$  | $$ /      $$ | $$ __  \$$    \       | $$  | $$| $$  | $$| $$  | $$| $$   \$$      | $$ | $$ | $$| $$ \$$    \ | $$  | $$|  $$ 
+    | $$_/ $$_/ $$| $$  | $$|  $$$$$$$ | $$|  \ _\$$$$$$\      | $$__/ $$| $$__/ $$| $$__/ $$| $$            | $$_/ $$_/ $$| $$ _\$$$$$$\| $$  | $$ \$$  
+    \$$   $$   $$| $$  | $$ \$$    $$  \$$  $$|       $$       \$$    $$ \$$    $$ \$$    $$| $$             \$$   $$   $$| $$|       $$| $$  | $$|  \  
+    \$$$$$\$$$$  \$$   \$$  \$$$$$$$   \$$$$  \$$$$$$$        _\$$$$$$$  \$$$$$$   \$$$$$$  \$$              \$$$$$\$$$$  \$$ \$$$$$$$  \$$   \$$ \$$  
+                                                            |  \__| $$                                                                                
+                                                                \$$    $$                                                                                
+                                                                \$$$$$$              
+                                                                                                     🐬WhaleGoddess🐬                                                                           
+    Note: Interacting with an unaudited protocol is always a risk. 
+    Deployer guarantee:
+    ✔️ Due diligence was taken by the developer(s) 
+    ✔️ Interactable thru trusted dapps or EtherScan at this address
+    ✔️ No backdoors or BS
+    We do not guarantee:
+    ❌ Refunds for *any reason*
+    ❌ Legal responsibility for any asset exposed to the protocol
 
+*/
 contract DeathWish is ReentrancyGuard {
     
     struct Switch {
@@ -24,13 +47,13 @@ contract DeathWish is ReentrancyGuard {
     mapping(address => uint256[]) userBenefactor;
     mapping(uint256 => address[]) benefactors;
 
-    uint64 public MAX_TIMESTAMP = 2**64 - 1; //hope this is good enough
+    uint64 public MAX_TIMESTAMP = type(uint64).max; //hope this is good enough
     
     function getCounter() external view returns (uint256) {
         return counter;
     }
 
-    function inspectSwitch(uint256 id) external view returns (uint256, address, address, uint256, uint256, uint256) {
+    function inspectSwitch(uint256 id) external view returns (uint256, address, address, uint8, uint256, uint256) {
         require(id < counter, "Out of range");
         Switch memory _switch = switches[id];
         return (switchClaimableByAt(id, msg.sender), _switch.user, _switch.tokenAddress, _switch.tokenType, _switch.tokenId, _switch.amount);
@@ -44,7 +67,8 @@ contract DeathWish is ReentrancyGuard {
         if (switchClaimed[id]) return MAX_TIMESTAMP;
         Switch memory _switch = switches[id];
         if (_user == _switch.user) return 0;
-        for(uint256 i = 0; i < (benefactors[id].length); i++) {
+        uint256 length = benefactors[id].length;
+        for(uint256 i = 0; i < length; i++) {
             if (benefactors[id][i] == _user) {
                 return (_switch.unlock + uint64((i * 60 days)));
             }
@@ -69,7 +93,7 @@ contract DeathWish is ReentrancyGuard {
         return userBenefactor[_user];
     }
 
-    function createNewERC20Switch(uint64 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external returns (uint256) {
+    function createNewERC20Switch(uint64 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external {
         require(IERC20(tokenAddress).allowance(msg.sender, address(this)) >= amount, "No allowance set");
         switches[counter] = Switch(
             1,
@@ -81,14 +105,15 @@ contract DeathWish is ReentrancyGuard {
         );
         benefactors[counter] = _benefactors;
         userSwitches[msg.sender].push(counter);
-        for(uint256 i = 0; i < _benefactors.length; i++) {
+        uint256 length = _benefactors.length;
+        for(uint256 i = 0; i < length; i++) {
             userBenefactor[_benefactors[i]].push(counter);
         }
         emit SwitchCreated(counter, switches[counter].tokenType);
-        return counter++;
+        counter++;
     }
 
-    function createNewERC721Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, address[] memory _benefactors) external returns (uint256) {
+    function createNewERC721Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, address[] memory _benefactors) external {
         require(IERC721(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         switches[counter] = Switch(
             2,
@@ -100,14 +125,15 @@ contract DeathWish is ReentrancyGuard {
         );
         benefactors[counter] = _benefactors;
         userSwitches[msg.sender].push(counter);
-        for(uint256 i = 0; i < _benefactors.length; i++) {
+        uint256 length = _benefactors.length;
+        for(uint256 i = 0; i < length; i++) {
             userBenefactor[_benefactors[i]].push(counter);
         }
         emit SwitchCreated(counter, switches[counter].tokenType);
-        return counter++;
+        counter++;
     }
 
-    function createNewERC1155Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, uint256 amount, address[] memory _benefactors) external returns (uint256) {
+    function createNewERC1155Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, uint256 amount, address[] memory _benefactors) external {
         require(IERC1155(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         switches[counter] = Switch(
             3,
@@ -119,12 +145,12 @@ contract DeathWish is ReentrancyGuard {
         );
         benefactors[counter] = _benefactors;
         userSwitches[msg.sender].push(counter);
-        
-        for(uint256 i = 0; i < _benefactors.length; i++) {
+        uint256 length = _benefactors.length;
+        for(uint256 i = 0; i < length; i++) {
             userBenefactor[_benefactors[i]].push(counter);
         }
         emit SwitchCreated(counter, switches[counter].tokenType);
-        return counter++;
+        counter++;
     }
 
     event SwitchCreated(uint256 id, uint8 switchType);
@@ -132,7 +158,6 @@ contract DeathWish is ReentrancyGuard {
     event UnlockTimeUpdated(uint256 id, uint64 unlock_time);
     event TokenAmountUpdated(uint256 id, uint256 unlock_time);
     event BenefactorsUpdated(uint256 id);
-    
 
     function updateUnlockTime(uint256 id, uint64 newUnlock) external {
         require(id < counter, "out of range");
@@ -150,6 +175,7 @@ contract DeathWish is ReentrancyGuard {
         _switch.amount = newAmount;
         emit TokenAmountUpdated(id, newAmount);
     }
+
     function updateBenefactors(uint256 id, address[] memory _benefactors) external {
         require(id < counter, "out of range");
         Switch memory _switch = switches[id];
@@ -163,10 +189,10 @@ contract DeathWish is ReentrancyGuard {
         require(isSwitchClaimableBy(id, msg.sender), "sender is not a benefactor or owner");
         if (_switch.tokenType == 1) {
             IERC20(_switch.tokenAddress).transferFrom(_switch.user, msg.sender, 
-            // use min here in case somoene sold some of their token
+            // use min here in case someone sold some of their token
             min(IERC20(_switch.tokenAddress).balanceOf(_switch.user), _switch.amount));
         } else if (_switch.tokenType == 2) {
-            IERC721(_switch.tokenAddress).transferFrom(_switch.user, msg.sender, _switch.tokenId);
+            IERC721(_switch.tokenAddress).safeTransferFrom(_switch.user, msg.sender, _switch.tokenId);
         } else if (_switch.tokenType == 3) {
             IERC1155(_switch.tokenAddress).safeTransferFrom(_switch.user, msg.sender, _switch.tokenId, 
             // use min here in case someone sold 1/2 of their 1155
