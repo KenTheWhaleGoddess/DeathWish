@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 /*
                 __                   __   __                                                                             __            __       ____  
                 |  \                 |  \ |  \                                                                           |  \          |  \     /    \ 
@@ -30,7 +31,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 */
 contract DeathWish is ReentrancyGuard {
-    
+    using EnumerableSet for EnumerableSet.UintSet;
     struct Switch {
         uint8 tokenType; //1 - ERC20 , 2 - ERC721 - 3 - ERC1155
         uint64 unlock;
@@ -41,13 +42,14 @@ contract DeathWish is ReentrancyGuard {
     }
 
     uint256 counter;
-    mapping(uint256 => Switch) switches;
-    mapping(uint256 => bool) switchClaimed;
-    mapping(address => uint256[]) userSwitches;
-    mapping(address => uint256[]) userBenefactor;
-    mapping(uint256 => address[]) benefactors;
+    mapping(uint256 => Switch) switches; // main construct
+    mapping(uint256 => bool) switchClaimed; 
+    mapping(address => mapping(address => uint256)) allocated;  // Amount that needs to continually be allocated/allowed for a particular user and token (ERC20)
+    mapping(address => uint256[]) userSwitches; // Enumerate switches owned by a user
+    mapping(address => EnumerableSet.UintSet) userBenefactor; // Enumerate switches given someone who is a benefactor
+    mapping(uint256 => address[]) benefactors; // Enumerate benefactors given a switch
 
-    uint64 public MAX_TIMESTAMP = type(uint64).max; //hope this is good enough
+    uint64 public MAX_TIMESTAMP = type(uint64).max;
     
     function getCounter() external view returns (uint256) {
         return counter;
@@ -90,11 +92,11 @@ contract DeathWish is ReentrancyGuard {
     }
 
     function getBenefactorSwitches(address _user) external view returns (uint256[] memory) {
-        return userBenefactor[_user];
+        return userBenefactor[_user].values();
     }
 
     function createNewERC20Switch(uint64 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external {
-        require(IERC20(tokenAddress).allowance(msg.sender, address(this)) >= amount, "No allowance set");
+        require(IERC20(tokenAddress).allowance(msg.sender, address(this)) >= (amount + allocated[msg.sender][tokenAddress]), "No allowance set");
         switches[counter] = Switch(
             1,
             unlockTimestamp,
@@ -105,9 +107,10 @@ contract DeathWish is ReentrancyGuard {
         );
         benefactors[counter] = _benefactors;
         userSwitches[msg.sender].push(counter);
+        allocated[msg.sender][tokenAddress] += amount; 
         uint256 length = _benefactors.length;
         for(uint256 i = 0; i < length; i++) {
-            userBenefactor[_benefactors[i]].push(counter);
+            userBenefactor[_benefactors[i]].add(counter);
         }
         emit SwitchCreated(counter, switches[counter].tokenType);
         counter++;
@@ -127,7 +130,7 @@ contract DeathWish is ReentrancyGuard {
         userSwitches[msg.sender].push(counter);
         uint256 length = _benefactors.length;
         for(uint256 i = 0; i < length; i++) {
-            userBenefactor[_benefactors[i]].push(counter);
+            userBenefactor[_benefactors[i]].add(counter);
         }
         emit SwitchCreated(counter, switches[counter].tokenType);
         counter++;
@@ -147,7 +150,7 @@ contract DeathWish is ReentrancyGuard {
         userSwitches[msg.sender].push(counter);
         uint256 length = _benefactors.length;
         for(uint256 i = 0; i < length; i++) {
-            userBenefactor[_benefactors[i]].push(counter);
+            userBenefactor[_benefactors[i]].add(counter);
         }
         emit SwitchCreated(counter, switches[counter].tokenType);
         counter++;
