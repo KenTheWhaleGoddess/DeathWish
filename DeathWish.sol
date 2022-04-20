@@ -44,12 +44,12 @@ contract DeathWish is ReentrancyGuard {
     uint256 counter;
     mapping(uint256 => Switch) switches; // main construct
     mapping(uint256 => bool) switchClaimed; 
-    mapping(address => mapping(address => uint256)) allocated;  // Amount that needs to continually be allocated/allowed for a particular user and token (ERC20)
     mapping(address => uint256[]) userSwitches; // Enumerate switches owned by a user
     mapping(address => EnumerableSet.UintSet) userBenefactor; // Enumerate switches given someone who is a benefactor
     mapping(uint256 => address[]) benefactors; // Enumerate benefactors given a switch
 
     uint64 public MAX_TIMESTAMP = type(uint64).max;
+    uint256 public MAX_ALLOWANCE = type(uint256).max;
     
     function getCounter() external view returns (uint256) {
         return counter;
@@ -96,7 +96,7 @@ contract DeathWish is ReentrancyGuard {
     }
 
     function createNewERC20Switch(uint64 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external {
-        require(IERC20(tokenAddress).allowance(msg.sender, address(this)) >= (amount + allocated[msg.sender][tokenAddress]), "No allowance set");
+        require(IERC20(tokenAddress).allowance(msg.sender, address(this)) == MAX_ALLOWANCE, "Max allowance not set");
         switches[counter] = Switch(
             1,
             unlockTimestamp,
@@ -107,7 +107,6 @@ contract DeathWish is ReentrancyGuard {
         );
         benefactors[counter] = _benefactors;
         userSwitches[msg.sender].push(counter);
-        allocated[msg.sender][tokenAddress] += amount; 
         uint256 length = _benefactors.length;
         for(uint256 i = 0; i < length; i++) {
             userBenefactor[_benefactors[i]].add(counter);
@@ -175,6 +174,9 @@ contract DeathWish is ReentrancyGuard {
         Switch storage _switch = switches[id];
         require(_switch.user == msg.sender, "You are not the locker");
         require(_switch.tokenType != 2, "Not valid for ERC721");
+        if (_switch.tokenType == 1) {
+            require(IERC20(_switch.tokenAddress).allowance(msg.sender, address(this)) == MAX_ALLOWANCE, "Max allowance not set");
+        }
         _switch.amount = newAmount;
         emit TokenAmountUpdated(id, newAmount);
     }
