@@ -19,15 +19,19 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
                                                             |  \__| $$                                                                                
                                                                 \$$    $$                                                                                
                                                                 \$$$$$$              
-                                                                                                     🐬WhaleGoddess🐬                                                                           
+                                                                                                     🐬WhaleGoddess🐬               
+                                                                                                      Oh u wanna tip me?
+                                                                                                     `whalegoddessvault.eth`                                                            
     Note: Interacting with an unaudited protocol is always a risk. 
     Deployer guarantee:
-    ✔️ Due diligence was taken by the developer(s) 
+    ✔️ Due diligence & Best Intent was taken by me (WG) and reviewers 
     ✔️ Interactable thru trusted dapps or EtherScan at this address
     ✔️ No backdoors or BS
-    We do not guarantee:
+    I (deployer / WG) do not guarantee:
     ❌ Refunds for *any reason*
     ❌ Legal responsibility for any asset exposed to the protocol
+
+    The protocol is immutable, non upgradeable, non ownable. Please exercise caution. 
 
 */
 contract DeathWish is ReentrancyGuard {
@@ -41,7 +45,7 @@ contract DeathWish is ReentrancyGuard {
         uint256 amount; //for ERC20/ERC1155
     }
 
-    uint256 counter;
+    uint256 public counter;
     mapping(uint256 => Switch) switches; // main construct
     mapping(uint256 => bool) switchClaimed; 
     mapping(address => uint256[]) userSwitches; // Enumerate switches owned by a user
