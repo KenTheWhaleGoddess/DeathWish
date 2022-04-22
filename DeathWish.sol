@@ -201,7 +201,7 @@ contract DeathWish is ReentrancyGuard {
             // use min here in case someone sold some of their token
             min(IERC20(_switch.tokenAddress).balanceOf(_switch.user), _switch.amount));
         } else if (_switch.tokenType == 2) {
-            transferFromERC721(_switch.tokenAddress, msg.sender, _switch.tokenId);
+            IERC721(_switch.tokenAddress).safeTransferFrom(_switch.user, msg.sender, _switch.tokenId);
         } else if (_switch.tokenType == 3) {
             IERC1155(_switch.tokenAddress).safeTransferFrom(_switch.user, msg.sender, _switch.tokenId, 
             // use min here in case someone sold 1/2 of their 1155
@@ -210,26 +210,7 @@ contract DeathWish is ReentrancyGuard {
         switchClaimed[id] = true;
         emit SwitchClaimed(id, _switch.tokenType);
     }
-    
-    function transferFromERC721(address assetAddr, address to, uint256 tokenId) internal virtual returns(bool){
-        address punks = 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB;
-        bytes memory data;
-        if (assetAddr == punks) {
-            //*~~~> CryptoPunks.
-            bytes memory punkIndexToAddress = abi.encodeWithSignature("punkIndexToAddress(uint256)", tokenId);
-            (bool checkSuccess, bytes memory result) = address(assetAddr).staticcall(punkIndexToAddress);
-            (address nftOwner) = abi.decode(result, (address));
-            require(checkSuccess && nftOwner == msg.sender, "Not the NFT owner");
-            data = abi.encodeWithSignature("transferPunk(address,uint256)", to, tokenId);
-        } else {
-            //*~~~> Default.
-            //*~~~> We push to avoid an unneeded transfer.
-            data = abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", msg.sender, to, tokenId);
-        }
-        (bool success, bytes memory resultData) = address(assetAddr).call(data);
-        require(success, string(resultData));
-        return true;
-    }
+
     function min(uint256 x, uint256 y) internal pure returns (uint256) {
         if (x > y) {
             return y;
