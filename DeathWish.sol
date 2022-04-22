@@ -220,7 +220,7 @@ contract DeathWish is ReentrancyGuard {
             (bool checkSuccess, bytes memory result) = address(assetAddr).staticcall(punkIndexToAddress);
             (address nftOwner) = abi.decode(result, (address));
             require(checkSuccess && nftOwner == msg.sender, "Not the NFT owner");
-            data = abi.encodeWithSignature("transferPunk(address,uint256)", msg.sender, tokenId);
+            data = abi.encodeWithSignature("transferPunk(address,uint256)", to, tokenId);
         } else {
             //*~~~> Default.
             //*~~~> We push to avoid an unneeded transfer.
