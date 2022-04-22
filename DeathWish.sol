@@ -21,7 +21,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
                                                                 \$$$$$$              
                                                                                                      🐬WhaleGoddess🐬               
                                                                                                       Oh u wanna tip me?
-                                                                                                     `whalegoddessvault.eth`                                                            
+                                                                                                     `whalegoddessvault.eth` / `wgv.eth`                                                            
     Note: Interacting with an unaudited protocol is always a risk. 
     Deployer guarantee:
     ✔️ Due diligence & Best Intent was taken by me (WG) and reviewers 
@@ -121,6 +121,7 @@ contract DeathWish is ReentrancyGuard {
 
     function createNewERC721Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, address[] memory _benefactors) external {
         require(IERC721(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
+        require(tokenAddress != 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB, "please use Wrapped Punks: https://www.wrappedpunks.com/");
         switches[counter] = Switch(
             2,
             unlockTimestamp,
@@ -196,6 +197,7 @@ contract DeathWish is ReentrancyGuard {
     function claimSwitch(uint256 id) external nonReentrant {
         Switch memory _switch = switches[id];
         require(isSwitchClaimableBy(id, msg.sender), "sender is not a benefactor or owner");
+        switchClaimed[id] = true;
         if (_switch.tokenType == 1) {
             IERC20(_switch.tokenAddress).transferFrom(_switch.user, msg.sender, 
             // use min here in case someone sold some of their token
@@ -207,7 +209,6 @@ contract DeathWish is ReentrancyGuard {
             // use min here in case someone sold 1/2 of their 1155
             min(IERC1155(_switch.tokenAddress).balanceOf(_switch.user, _switch.tokenId), _switch.amount), '');
         } else { revert("FUD"); }
-        switchClaimed[id] = true;
         emit SwitchClaimed(id, _switch.tokenType);
     }
 
