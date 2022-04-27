@@ -197,7 +197,7 @@ contract DeathWish is ReentrancyGuard {
         benefactors[id] = _benefactors;
 
         for(uint256 i = 0; i < len2; i++) {
-            userBenefactor[benefactors[id][i]].add(id);
+            userBenefactor[_benefactors[i]].add(id);
         }
         emit BenefactorsUpdated(id);
     }
