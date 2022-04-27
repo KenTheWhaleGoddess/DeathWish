@@ -37,14 +37,16 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 contract DeathWish is ReentrancyGuard {
     using EnumerableSet for EnumerableSet.UintSet;
     struct Switch {
-        uint8 tokenType; //1 - ERC20 , 2 - ERC721 - 3 - ERC1155
+        TokenType tokenType; //1 - ERC20 , 2 - ERC721 - 3 - ERC1155
         uint64 unlock;
         address user;
         address tokenAddress;
         uint256 tokenId; //for ERC721/ERC1155
         uint256 amount; //for ERC20/ERC1155
     }
-
+    enum TokenType {
+        ERC20, ERC721, ERC1155
+    }
     uint256 public counter;
     mapping(uint256 => Switch) switches; // main construct
     mapping(uint256 => bool) switchClaimed; 
@@ -52,14 +54,10 @@ contract DeathWish is ReentrancyGuard {
     mapping(address => EnumerableSet.UintSet) userBenefactor; // Enumerate switches given someone who is a benefactor
     mapping(uint256 => address[]) benefactors; // Enumerate benefactors given a switch. Ordered list.
 
-    uint64 public MAX_TIMESTAMP = type(uint64).max;
-    uint256 public MAX_ALLOWANCE = type(uint256).max;
-    
-    function getCounter() external view returns (uint256) {
-        return counter;
-    }
+    uint64 public constant MAX_TIMESTAMP = type(uint64).max;
+    uint256 public constant MAX_ALLOWANCE = type(uint256).max;
 
-    function inspectSwitch(uint256 id) external view returns (uint256, address, address, uint8, uint256, uint256) {
+    function inspectSwitch(uint256 id) external view returns (uint256, address, address, TokenType, uint256, uint256) {
         require(id < counter, "Out of range");
         Switch memory _switch = switches[id];
         return (switchClaimableByAt(id, msg.sender), _switch.user, _switch.tokenAddress, _switch.tokenType, _switch.tokenId, _switch.amount);
@@ -102,7 +100,7 @@ contract DeathWish is ReentrancyGuard {
     function createNewERC20Switch(uint64 unlockTimestamp, address tokenAddress, uint256 amount, address[] memory _benefactors) external {
         require(IERC20(tokenAddress).allowance(msg.sender, address(this)) == MAX_ALLOWANCE, "Max allowance not set");
         switches[counter] = Switch(
-            1,
+            TokenType.ERC20,
             unlockTimestamp,
             msg.sender,
             tokenAddress,
@@ -123,7 +121,7 @@ contract DeathWish is ReentrancyGuard {
         require(IERC721(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         require(tokenAddress != 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB, "please use Wrapped Punks: https://www.wrappedpunks.com/");
         switches[counter] = Switch(
-            2,
+            TokenType.ERC721,
             unlockTimestamp,
             msg.sender,
             tokenAddress,
@@ -143,7 +141,7 @@ contract DeathWish is ReentrancyGuard {
     function createNewERC1155Switch(uint64 unlockTimestamp, address tokenAddress, uint256 tokenId, uint256 amount, address[] memory _benefactors) external {
         require(IERC1155(tokenAddress).isApprovedForAll(msg.sender, address(this)), "No allowance set");
         switches[counter] = Switch(
-            3,
+            TokenType.ERC1155,
             unlockTimestamp,
             msg.sender,
             tokenAddress,
@@ -160,8 +158,8 @@ contract DeathWish is ReentrancyGuard {
         counter++;
     }
 
-    event SwitchCreated(uint256 id, uint8 switchType);
-    event SwitchClaimed(uint256 id, uint8 switchType);
+    event SwitchCreated(uint256 id, TokenType switchType);
+    event SwitchClaimed(uint256 id, TokenType switchType);
     event UnlockTimeUpdated(uint256 id, uint64 unlock_time);
     event TokenAmountUpdated(uint256 id, uint256 unlock_time);
     event BenefactorsUpdated(uint256 id);
@@ -178,8 +176,8 @@ contract DeathWish is ReentrancyGuard {
         require(id < counter, "out of range");
         Switch storage _switch = switches[id];
         require(_switch.user == msg.sender, "You are not the locker");
-        require(_switch.tokenType != 2, "Not valid for ERC721");
-        if (_switch.tokenType == 1) {
+        require(_switch.tokenType != TokenType.ERC721, "Not valid for ERC721");
+        if (_switch.tokenType == TokenType.ERC20) {
             require(IERC20(_switch.tokenAddress).allowance(msg.sender, address(this)) == MAX_ALLOWANCE, "Max allowance not set");
         }
         _switch.amount = newAmount;
@@ -198,13 +196,13 @@ contract DeathWish is ReentrancyGuard {
         Switch memory _switch = switches[id];
         require(isSwitchClaimableBy(id, msg.sender), "sender is not a benefactor or owner");
         switchClaimed[id] = true;
-        if (_switch.tokenType == 1) {
+        if (_switch.tokenType == TokenType.ERC20) {
             IERC20(_switch.tokenAddress).transferFrom(_switch.user, msg.sender, 
             // use min here in case someone sold some of their token
             min(IERC20(_switch.tokenAddress).balanceOf(_switch.user), _switch.amount));
-        } else if (_switch.tokenType == 2) {
+        } else if (_switch.tokenType == TokenType.ERC721) {
             IERC721(_switch.tokenAddress).safeTransferFrom(_switch.user, msg.sender, _switch.tokenId);
-        } else if (_switch.tokenType == 3) {
+        } else if (_switch.tokenType == TokenType.ERC1155) {
             IERC1155(_switch.tokenAddress).safeTransferFrom(_switch.user, msg.sender, _switch.tokenId, 
             // use min here in case someone sold 1/2 of their 1155
             min(IERC1155(_switch.tokenAddress).balanceOf(_switch.user, _switch.tokenId), _switch.amount), '');
