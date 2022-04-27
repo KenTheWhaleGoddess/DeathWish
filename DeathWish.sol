@@ -187,8 +187,18 @@ contract DeathWish is ReentrancyGuard {
     function updateBenefactors(uint256 id, address[] memory _benefactors) external {
         require(id < counter, "out of range");
         Switch memory _switch = switches[id];
+        uint256 len1 = benefactors[id].length;
+        uint256 len2 = _benefactors.length;
         require(_switch.user == msg.sender, "You are not the locker");
+        for(uint256 i = 0; i < len1; i++) {
+            userBenefactor[benefactors[id][i]].remove(id);
+        }
+        
         benefactors[id] = _benefactors;
+
+        for(uint256 i = 0; i < len2; i++) {
+            userBenefactor[benefactors[id][i]].add(id);
+        }
         emit BenefactorsUpdated(id);
     }
 
