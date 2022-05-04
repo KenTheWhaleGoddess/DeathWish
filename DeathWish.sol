@@ -57,10 +57,10 @@ contract DeathWish is ReentrancyGuard {
     uint64 public constant MAX_TIMESTAMP = type(uint64).max;
     uint256 public constant MAX_ALLOWANCE = type(uint256).max;
 
-    function inspectSwitch(uint256 id) external view returns (uint256, address, address, TokenType, uint256, uint256) {
+    function inspectSwitchAs(uint256 id, address _user) external view returns (uint64, uint64, address, address, TokenType, uint256, uint256) {
         require(id < counter, "Out of range");
         Switch memory _switch = switches[id];
-        return (switchClaimableByAt(id, msg.sender), _switch.user, _switch.tokenAddress, _switch.tokenType, _switch.tokenId, _switch.amount);
+        return (switchClaimableByAt(id, _user), _switch.unlock, _switch.user, _switch.tokenAddress, _switch.tokenType, _switch.tokenId, _switch.amount);
     }
 
     function isSwitchClaimed(uint256 id) external view returns (bool) {
@@ -166,21 +166,21 @@ contract DeathWish is ReentrancyGuard {
 
     function updateUnlockTime(uint256 id, uint64 newUnlock) external {
         require(id < counter, "out of range");
-        Switch storage _switch = switches[id];
+        Switch memory _switch = switches[id];
         require(_switch.user == msg.sender, "You are not the locker");
-        _switch.unlock = newUnlock;
+        switches[id].unlock = newUnlock;
         emit UnlockTimeUpdated(id, newUnlock);
     }
 
     function updateTokenAmount(uint256 id, uint256 newAmount) external {
         require(id < counter, "out of range");
-        Switch storage _switch = switches[id];
+        Switch memory _switch = switches[id];
         require(_switch.user == msg.sender, "You are not the locker");
         require(_switch.tokenType != TokenType.ERC721, "Not valid for ERC721");
         if (_switch.tokenType == TokenType.ERC20) {
             require(IERC20(_switch.tokenAddress).allowance(msg.sender, address(this)) == MAX_ALLOWANCE, "Max allowance not set");
         }
-        _switch.amount = newAmount;
+        switches[id].amount = newAmount;
         emit TokenAmountUpdated(id, newAmount);
     }
 
